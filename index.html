@@ -51,7 +51,11 @@
     setInterval(() => {
       if (images.length === 0) return;
       current = (current + 1) % images.length;
-      slide.src = images[current];
+      slide.style.opacity = 0;
+      setTimeout(() => {
+        slide.src = images[current];
+        slide.style.opacity = 1;
+      }, 1000);
     }, SLIDE_INTERVAL);
 
     setInterval(updateGallery, REFRESH_INTERVAL);
