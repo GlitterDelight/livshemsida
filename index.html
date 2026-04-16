@@ -7,32 +7,40 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="gallery"></div>
+  <img id="slide" />
+  <p class="empty" id="msg" hidden>No images yet.</p>
+
   <script>
     const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    const INTERVAL = 5000;
 
     fetch('/images/')
       .then(r => r.text())
       .then(html => {
         const doc = new DOMParser().parseFromString(html, 'text/html');
-        const links = [...doc.querySelectorAll('a[href]')]
+        const images = [...doc.querySelectorAll('a[href]')]
           .map(a => a.getAttribute('href'))
-          .filter(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)));
+          .filter(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)))
+          .map(href => '/images/' + href);
 
-        const gallery = document.getElementById('gallery');
-        if (links.length === 0) {
-          gallery.innerHTML = '<p class="empty">No images yet.</p>';
+        if (images.length === 0) {
+          document.getElementById('msg').hidden = false;
+          document.getElementById('slide').hidden = true;
           return;
         }
-        links.forEach(href => {
-          const img = document.createElement('img');
-          img.src = '/images/' + href;
-          img.loading = 'lazy';
-          gallery.appendChild(img);
-        });
+
+        let current = 0;
+        const slide = document.getElementById('slide');
+        slide.src = images[0];
+
+        setInterval(() => {
+          current = (current + 1) % images.length;
+          slide.src = images[current];
+        }, INTERVAL);
       })
       .catch(() => {
-        document.getElementById('gallery').innerHTML = '<p class="empty">Could not load images.</p>';
+        document.getElementById('msg').hidden = false;
+        document.getElementById('slide').hidden = true;
       });
   </script>
 </body>
