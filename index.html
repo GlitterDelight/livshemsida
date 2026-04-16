@@ -7,10 +7,33 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <nav>
-    <a href="#">Projects</a>
-    <a href="#">Own Work</a>
-    <a href="#">About</a>
-  </nav>
+  <div id="gallery"></div>
+  <script>
+    const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+
+    fetch('/images/')
+      .then(r => r.text())
+      .then(html => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const links = [...doc.querySelectorAll('a[href]')]
+          .map(a => a.getAttribute('href'))
+          .filter(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)));
+
+        const gallery = document.getElementById('gallery');
+        if (links.length === 0) {
+          gallery.innerHTML = '<p class="empty">No images yet.</p>';
+          return;
+        }
+        links.forEach(href => {
+          const img = document.createElement('img');
+          img.src = '/images/' + href;
+          img.loading = 'lazy';
+          gallery.appendChild(img);
+        });
+      })
+      .catch(() => {
+        document.getElementById('gallery').innerHTML = '<p class="empty">Could not load images.</p>';
+      });
+  </script>
 </body>
 </html>
