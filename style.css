@@ -44,9 +44,10 @@ body {
 
 .nav-item span {
   position: absolute;
-  bottom: 2rem;
+  top: 50%;
   left: 0;
   right: 0;
+  transform: translateY(-50%);
   text-align: center;
   color: #fff;
   font-size: 1.5rem;
