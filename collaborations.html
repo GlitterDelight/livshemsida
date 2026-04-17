@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a href="/" class="back">←</a>
+  <img id="slide" />
+  <p class="empty" id="msg" hidden>No images yet.</p>
+
+  <script>
+    const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    const SLIDE_INTERVAL = 5000;
+    const REFRESH_INTERVAL = 10000;
+    const SECTION = location.pathname.replace('.html', '').replace('/', '');
+
+    let images = [];
+    let current = 0;
+    const slide = document.getElementById('slide');
+    const msg = document.getElementById('msg');
+
+    function fetchImages() {
+      return fetch('/' + SECTION + '/')
+        .then(r => r.text())
+        .then(html => {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          return [...doc.querySelectorAll('a[href]')]
+            .map(a => a.getAttribute('href'))
+            .filter(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)))
+            .map(href => '/' + SECTION + '/' + href);
+        });
+    }
+
+    function updateGallery() {
+      fetchImages().then(newImages => {
+        images = newImages;
+        if (images.length === 0) {
+          msg.hidden = false;
+          slide.hidden = true;
+        } else {
+          msg.hidden = true;
+          slide.hidden = false;
+          if (current >= images.length) current = 0;
+          if (!slide.src || slide.src === window.location.href) slide.src = images[0];
+        }
+      }).catch(() => {});
+    }
+
+    updateGallery();
+
+    setInterval(() => {
+      if (images.length === 0) return;
+      current = (current + 1) % images.length;
+      slide.style.opacity = 0;
+      setTimeout(() => {
+        slide.src = images[current];
+        slide.style.opacity = 1;
+      }, 1000);
+    }, SLIDE_INTERVAL);
+
+    setInterval(updateGallery, REFRESH_INTERVAL);
+  </script>
+</body>
+</html>
