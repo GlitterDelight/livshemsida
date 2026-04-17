@@ -51,9 +51,10 @@ body {
   text-align: center;
   color: #fff;
   font-size: clamp(1.5rem, 4vw, 3rem);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 300;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
 }
 
 /* Slideshow subpages */
