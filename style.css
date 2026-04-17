@@ -50,7 +50,7 @@ body {
   transform: translateY(-50%);
   text-align: center;
   color: #fff;
-  font-size: 1.5rem;
+  font-size: clamp(1.5rem, 4vw, 3rem);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
