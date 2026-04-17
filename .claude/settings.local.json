@@ -6,7 +6,10 @@
       "Bash(git commit *)",
       "Bash(git branch *)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(mv /mnt/molnenge_pool1/molnenge_livshemsida/about /mnt/molnenge_pool1/molnenge_livshemsida/contact)",
+      "Bash(rm /home/truenas_admin/livshemsida/about)",
+      "Bash(ln -s /mnt/molnenge_pool1/molnenge_livshemsida/contact /home/truenas_admin/livshemsida/contact)"
     ]
   }
 }
