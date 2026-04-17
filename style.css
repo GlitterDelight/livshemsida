@@ -16,6 +16,12 @@ body {
   height: 100vh;
 }
 
+@media (max-width: 768px) {
+  #nav {
+    flex-direction: column;
+  }
+}
+
 .nav-item {
   flex: 1;
   position: relative;
