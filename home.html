@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav id="nav">
+    <a href="projects.html" class="nav-item" id="projects">
+      <img />
+      <span>Projects</span>
+    </a>
+    <a href="collaborations.html" class="nav-item" id="collaborations">
+      <img />
+      <span>Collaborations</span>
+    </a>
+    <a href="contact.html" class="nav-item" id="contact">
+      <img />
+      <span>Contact</span>
+    </a>
+  </nav>
+
+  <script>
+    const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+
+    function loadThumbnail(section) {
+      fetch('/' + section + '/thumbnail/')
+        .then(r => r.text())
+        .then(html => {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const first = [...doc.querySelectorAll('a[href]')]
+            .map(a => a.getAttribute('href'))
+            .find(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)));
+          if (first) {
+            document.querySelector('#' + section + ' img').src = '/' + section + '/thumbnail/' + first;
+          }
+        });
+    }
+
+    ['projects', 'collaborations', 'contact'].forEach(loadThumbnail);
+  </script>
+</body>
+</html>
