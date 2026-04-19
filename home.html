@@ -9,15 +9,12 @@
 <body>
   <nav id="nav">
     <a href="projects.html" class="nav-item" id="projects">
-      <img />
       <span>Projects</span>
     </a>
     <a href="collaborations.html" class="nav-item" id="collaborations">
-      <img />
       <span>Collaborations</span>
     </a>
     <a href="contact.html" class="nav-item" id="contact">
-      <img />
       <span>Contact</span>
     </a>
   </nav>
@@ -27,14 +24,19 @@
 
     function loadThumbnail(section) {
       fetch('/' + section + '/thumbnail/')
-        .then(r => r.text())
-        .then(html => {
-          const doc = new DOMParser().parseFromString(html, 'text/html');
-          const first = [...doc.querySelectorAll('a[href]')]
-            .map(a => a.getAttribute('href'))
-            .find(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)));
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var first = Array.from(doc.querySelectorAll('a[href]'))
+            .map(function(a) { return a.getAttribute('href'); })
+            .find(function(href) {
+              return IMAGE_EXTS.some(function(ext) {
+                return href.toLowerCase().endsWith('.' + ext);
+              });
+            });
           if (first) {
-            document.querySelector('#' + section + ' img').src = '/' + section + '/thumbnail/' + first;
+            var url = '/' + section + '/thumbnail/' + first;
+            document.getElementById(section).style.backgroundImage = 'url(' + url + ')';
           }
         });
     }

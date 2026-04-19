@@ -1,67 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portfolio</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Projects</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .nav-item { background: #111; }
+    .nav-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    #empty { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      color: #555; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 1rem; letter-spacing: .15em; text-transform: uppercase; }
+  </style>
 </head>
 <body>
   <a href="/home.html" class="back">←</a>
-  <img id="slide" />
-  <p class="empty" id="msg" hidden>No images yet.</p>
+  <nav id="nav"></nav>
+  <p id="empty" hidden>No pages yet.</p>
 
   <script>
-    const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-    const SLIDE_INTERVAL = 5000;
-    const REFRESH_INTERVAL = 10000;
-    const SECTION = location.pathname.replace('.html', '').replace('/', '');
-
-    let images = [];
-    let current = 0;
-    const slide = document.getElementById('slide');
-    const msg = document.getElementById('msg');
-
-    function fetchImages() {
-      return fetch('/' + SECTION + '/')
-        .then(r => r.text())
-        .then(html => {
-          const doc = new DOMParser().parseFromString(html, 'text/html');
-          return [...doc.querySelectorAll('a[href]')]
-            .map(a => a.getAttribute('href'))
-            .filter(href => IMAGE_EXTS.some(ext => href.toLowerCase().endsWith('.' + ext)))
-            .map(href => '/' + SECTION + '/' + href);
+    fetch('/api/pages?category=projects')
+      .then(function(r) { return r.json(); })
+      .then(function(pages) {
+        var nav = document.getElementById('nav');
+        if (!pages.length) { document.getElementById('empty').hidden = false; return; }
+        pages.forEach(function(page) {
+          var a = document.createElement('a');
+          a.href = '/pages/' + page.slug;
+          a.className = 'nav-item';
+          var img = document.createElement('img');
+          if (page.thumbnail) img.src = page.thumbnail;
+          var span = document.createElement('span');
+          span.textContent = page.title;
+          a.appendChild(img);
+          a.appendChild(span);
+          nav.appendChild(a);
         });
-    }
-
-    function updateGallery() {
-      fetchImages().then(newImages => {
-        images = newImages;
-        if (images.length === 0) {
-          msg.hidden = false;
-          slide.hidden = true;
-        } else {
-          msg.hidden = true;
-          slide.hidden = false;
-          if (current >= images.length) current = 0;
-          if (!slide.src || slide.src === window.location.href) slide.src = images[0];
-        }
-      }).catch(() => {});
-    }
-
-    updateGallery();
-
-    setInterval(() => {
-      if (images.length === 0) return;
-      current = (current + 1) % images.length;
-      slide.style.opacity = 0;
-      setTimeout(() => {
-        slide.src = images[current];
-        slide.style.opacity = 1;
-      }, 1000);
-    }, SLIDE_INTERVAL);
-
-    setInterval(updateGallery, REFRESH_INTERVAL);
+      });
   </script>
 </body>
 </html>

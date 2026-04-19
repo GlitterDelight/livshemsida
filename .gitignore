@@ -1,0 +1,7 @@
+admin_config.json
+.secret_key
+venv/
+uploads/
+pages/
+__pycache__/
+*.pyc
