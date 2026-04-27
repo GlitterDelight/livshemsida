@@ -5,3 +5,4 @@ uploads/
 pages/
 __pycache__/
 *.pyc
+.claude/

@@ -137,13 +137,8 @@ button:hover{{opacity:.85}}
 </body>
 </html>""".encode()
 
-# ── HTML: admin dashboard ──────────────────────────────────────────────────
-_ADMIN_TEMPLATE = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin</title>
-<style>
+# ── shared CSS + JS for editor pages ──────────────────────────────────────
+_EDITOR_CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0f0f0f;color:#e0e0e0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -217,57 +212,9 @@ section h2{color:#fff;font-weight:300;font-size:1rem;letter-spacing:.15em;
 .field select:focus{border-color:#555}
 .cat-badge{font-size:.75rem;color:#888;border:1px solid #2a2a2a;border-radius:4px;
   padding:.15rem .5rem;margin-left:.5rem;text-transform:uppercase;letter-spacing:.08em}
-</style>
-</head>
-<body>
-<header>
-  <h1>Admin</h1>
-  <a class="logout" href="/logout">Log out</a>
-</header>
+"""
 
-<section>
-  <h2>My pages</h2>
-  <!--PAGES-->
-</section>
-
-<section>
-  <h2>Create new page</h2>
-  <div class="editor">
-    <form id="createForm" method="POST" action="/admin/create">
-      <input type="hidden" name="slug" id="slugInput"/>
-      <input type="hidden" name="blocks" id="blocksInput"/>
-      <div class="field">
-        <label>Page title</label>
-        <input type="text" name="title" id="titleInput"
-          placeholder="e.g. Spring collection 2025" autocomplete="off"/>
-        <div class="url-preview">
-          URL: livmeijernordgren.com/pages/<span id="slugPreview">…</span>
-        </div>
-      </div>
-      <div class="field">
-        <label>Category</label>
-        <select name="category" id="categoryInput">
-          <option value="">— No category —</option>
-          <option value="projects">Projects</option>
-          <option value="collaborations">Collaborations</option>
-          <option value="contact">Contact</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Content</label>
-        <div id="blocks"></div>
-        <div class="toolbar">
-          <button type="button" onclick="addText()">+ Add text</button>
-          <button type="button" onclick="addMedia('image')">+ Add image</button>
-          <button type="button" onclick="addMedia('video')">+ Add video</button>
-        </div>
-      </div>
-      <button type="button" class="publish-btn" onclick="publish()">Publish page</button>
-    </form>
-  </div>
-</section>
-
-<script>
+_EDITOR_JS = """
 let blockId = 0;
 
 document.addEventListener('input', function(e) {
@@ -277,30 +224,17 @@ document.addEventListener('input', function(e) {
   }
 });
 
-function slugify(s) {
-  return s.toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'page';
-}
-
-document.getElementById('titleInput').addEventListener('input', function() {
-  const slug = slugify(this.value);
-  document.getElementById('slugPreview').textContent = slug || '…';
-  document.getElementById('slugInput').value = slug;
-});
-
 function makeRemoveBtn(target) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'remove-btn';
   btn.title = 'Remove';
-  btn.textContent = '✕';
+  btn.textContent = '\\u2715';
   btn.addEventListener('click', function() { target.remove(); });
   return btn;
 }
 
-function addText() {
+function addText(initialContent) {
   const id = ++blockId;
   const div = document.createElement('div');
   div.className = 'block';
@@ -316,14 +250,21 @@ function addText() {
 
   const ta = document.createElement('textarea');
   ta.className = 'auto-resize';
-  ta.placeholder = 'Write something\u2026';
+  ta.placeholder = 'Write something\\u2026';
+  if (initialContent) {
+    ta.value = initialContent;
+    setTimeout(function() {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    }, 0);
+  }
 
   body.appendChild(lbl);
   body.appendChild(ta);
   div.appendChild(body);
   div.appendChild(makeRemoveBtn(div));
   document.getElementById('blocks').appendChild(div);
-  ta.focus();
+  if (!initialContent) ta.focus();
 }
 
 function addMedia(type) {
@@ -365,11 +306,48 @@ function addMedia(type) {
   document.getElementById('blocks').appendChild(div);
 }
 
+function addMediaExisting(type, url) {
+  const id = ++blockId;
+  const label = type === 'image' ? 'Image' : 'Video';
+
+  const div = document.createElement('div');
+  div.className = 'block';
+  div.dataset.type = type;
+  div.dataset.id = id;
+  div.dataset.url = url;
+
+  const body = document.createElement('div');
+  body.className = 'block-body';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'block-label';
+  lbl.textContent = label;
+
+  body.appendChild(lbl);
+
+  if (type === 'image') {
+    const img = document.createElement('img');
+    img.className = 'preview-img';
+    img.src = url;
+    body.appendChild(img);
+  } else {
+    const vid = document.createElement('video');
+    vid.className = 'preview-vid';
+    vid.controls = true;
+    vid.src = url;
+    body.appendChild(vid);
+  }
+
+  div.appendChild(body);
+  div.appendChild(makeRemoveBtn(div));
+  document.getElementById('blocks').appendChild(div);
+}
+
 function uploadFile(input, id, type) {
   const file = input.files[0];
   if (!file) return;
   const area = document.getElementById('ua' + id);
-  area.querySelector('p').textContent = 'Uploading\u2026';
+  area.querySelector('p').textContent = 'Uploading\\u2026';
   const fd = new FormData();
   fd.append('file', file);
   fetch('/admin/upload', {method: 'POST', body: fd})
@@ -392,16 +370,11 @@ function uploadFile(input, id, type) {
         area.appendChild(vid);
       }
     })
-    .catch(function() { area.querySelector('p').textContent = 'Upload failed \u2014 try again'; });
+    .catch(function() { area.querySelector('p').textContent = 'Upload failed \\u2014 try again'; });
 }
 
-function publish() {
-  const title = document.getElementById('titleInput').value.trim();
-  if (!title) { alert('Please enter a page title.'); return; }
-
+function collectBlocks(formId) {
   const blockDivs = document.getElementById('blocks').querySelectorAll('.block');
-  if (!blockDivs.length) { alert('Please add at least one content block.'); return; }
-
   const blocks = [];
   let valid = true;
   blockDivs.forEach(function(div) {
@@ -420,17 +393,26 @@ function publish() {
       blocks.push({type: type, url: url});
     }
   });
+  return valid ? blocks : null;
+}
 
-  if (!valid) return;
+function publish(formId) {
+  const title = document.getElementById('titleInput').value.trim();
+  if (!title) { alert('Please enter a page title.'); return; }
+
+  const blockDivs = document.getElementById('blocks').querySelectorAll('.block');
+  if (!blockDivs.length) { alert('Please add at least one content block.'); return; }
+
+  const blocks = collectBlocks(formId);
+  if (!blocks) return;
   if (!blocks.length) { alert('Please add some content.'); return; }
 
   document.getElementById('blocksInput').value = JSON.stringify(blocks);
-  document.getElementById('createForm').submit();
+  document.getElementById(formId).submit();
 }
-</script>
-</body>
-</html>"""
+"""
 
+# ── HTML: admin dashboard ──────────────────────────────────────────────────
 def _admin_html() -> bytes:
     pages = _list_pages()
     if pages:
@@ -444,6 +426,7 @@ def _admin_html() -> bytes:
                 + badge +
                 '</span>'
                 '<div class="actions">'
+                '<a href="/admin/edit?slug=' + _esc(p["slug"]) + '">Edit</a>'
                 '<form method="POST" action="/admin/delete" style="display:inline">'
                 '<input type="hidden" name="slug" value="' + _esc(p["slug"]) + '"/>'
                 '<button type="submit" class="del-btn"'
@@ -454,24 +437,186 @@ def _admin_html() -> bytes:
         pages_html = '<div class="pages-list">' + "".join(_row(p) for p in pages) + '</div>'
     else:
         pages_html = '<p class="empty">No pages created yet.</p>'
-    return _ADMIN_TEMPLATE.replace('<!--PAGES-->', pages_html).encode()
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin</title>
+<style>{_EDITOR_CSS}</style>
+</head>
+<body>
+<header>
+  <h1>Admin</h1>
+  <a class="logout" href="/logout">Log out</a>
+</header>
+
+<section>
+  <h2>My pages</h2>
+  {pages_html}
+</section>
+
+<section>
+  <h2>Create new page</h2>
+  <div class="editor">
+    <form id="createForm" method="POST" action="/admin/create">
+      <input type="hidden" name="slug" id="slugInput"/>
+      <input type="hidden" name="blocks" id="blocksInput"/>
+      <div class="field">
+        <label>Page title</label>
+        <input type="text" name="title" id="titleInput"
+          placeholder="e.g. Spring collection 2025" autocomplete="off"/>
+        <div class="url-preview">
+          URL: livmeijernordgren.com/pages/<span id="slugPreview">…</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select name="category" id="categoryInput">
+          <option value="">— No category —</option>
+          <option value="projects">Projects</option>
+          <option value="collaborations">Collaborations</option>
+          <option value="contact">Contact</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Content</label>
+        <div id="blocks"></div>
+        <div class="toolbar">
+          <button type="button" onclick="addText()">+ Add text</button>
+          <button type="button" onclick="addMedia('image')">+ Add image</button>
+          <button type="button" onclick="addMedia('video')">+ Add video</button>
+        </div>
+      </div>
+      <button type="button" class="publish-btn" onclick="publish('createForm')">Publish page</button>
+    </form>
+  </div>
+</section>
+
+<script>
+{_EDITOR_JS}
+
+function slugify(s) {{
+  return s.toLowerCase()
+    .replace(/[^\\w\\s-]/g, '')
+    .replace(/[\\s_]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'page';
+}}
+
+document.getElementById('titleInput').addEventListener('input', function() {{
+  const slug = slugify(this.value);
+  document.getElementById('slugPreview').textContent = slug || '\\u2026';
+  document.getElementById('slugInput').value = slug;
+}});
+</script>
+</body>
+</html>""".encode()
+
+# ── HTML: edit page ────────────────────────────────────────────────────────
+def _edit_html(slug: str) -> bytes:
+    idx = _load_index()
+    meta = idx.get(slug)
+    if not meta:
+        return b"<h1>Page not found</h1>"
+
+    title = meta.get("title", "")
+    category = meta.get("category", "")
+    blocks = meta.get("blocks", [])
+
+    cat_options = f'<option value="">— No category —</option>'
+    for k, v in CATEGORIES.items():
+        sel = ' selected' if k == category else ''
+        cat_options += f'<option value="{_esc(k)}"{sel}>{_esc(v)}</option>'
+
+    blocks_json = json.dumps(blocks).replace("</", "<\\/")
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Edit — {_esc(title)}</title>
+<style>{_EDITOR_CSS}</style>
+</head>
+<body>
+<header>
+  <h1>Edit page</h1>
+  <a class="logout" href="/admin">← Back</a>
+</header>
+
+<section>
+  <h2>{_esc(title)}</h2>
+  <div class="editor">
+    <form id="editForm" method="POST" action="/admin/edit">
+      <input type="hidden" name="slug" value="{_esc(slug)}"/>
+      <input type="hidden" name="blocks" id="blocksInput"/>
+      <div class="field">
+        <label>Page title</label>
+        <input type="text" name="title" id="titleInput"
+          value="{_esc(title)}" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select name="category" id="categoryInput">
+          {cat_options}
+        </select>
+      </div>
+      <div class="field">
+        <label>Content</label>
+        <div id="blocks"></div>
+        <div class="toolbar">
+          <button type="button" onclick="addText()">+ Add text</button>
+          <button type="button" onclick="addMedia('image')">+ Add image</button>
+          <button type="button" onclick="addMedia('video')">+ Add video</button>
+        </div>
+      </div>
+      <button type="button" class="publish-btn" onclick="publish('editForm')">Save changes</button>
+    </form>
+  </div>
+</section>
+
+<script>
+{_EDITOR_JS}
+
+window.addEventListener('DOMContentLoaded', function() {{
+  const existing = {blocks_json};
+  existing.forEach(function(block) {{
+    if (block.type === 'text') {{
+      addText(block.content);
+    }} else {{
+      addMediaExisting(block.type, block.url);
+    }}
+  }});
+}});
+</script>
+</body>
+</html>""".encode()
 
 # ── HTML: generated page ───────────────────────────────────────────────────
 def _generate_page(title: str, blocks: list, category: str = "") -> str:
-    blocks_html = ""
-    for b in blocks:
+    images = [b for b in blocks if b.get("type") == "image"]
+    others = [b for b in blocks if b.get("type") != "image"]
+
+    gallery_html = ""
+    if images:
+        thumbs = "".join(
+            f'<img src="{_esc(b["url"])}" alt="" class="gallery-thumb" data-src="{_esc(b["url"])}">'
+            for b in images
+        )
+        gallery_html = f'<div class="gallery">{thumbs}</div>'
+
+    others_html = ""
+    for b in others:
         t = b.get("type")
         if t == "text":
-            blocks_html += f'<p class="block-text">{_esc(b.get("content", ""))}</p>\n'
-        elif t == "image":
-            blocks_html += f'<div class="block-image"><img src="{_esc(b.get("url",""))}" alt=""/></div>\n'
+            others_html += f'<p class="block-text">{_esc(b.get("content", ""))}</p>\n'
         elif t == "video":
             url = _esc(b.get("url", ""))
-            blocks_html += (
+            others_html += (
                 f'<div class="block-video">'
                 f'<video controls playsinline><source src="{url}"/></video>'
                 f'</div>\n'
             )
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -488,16 +633,38 @@ body{{background:#0f0f0f;color:#e0e0e0;
 h1{{text-align:center;font-weight:300;letter-spacing:.2em;text-transform:uppercase;
   font-size:clamp(1.5rem,4vw,3rem);margin-bottom:3rem;color:#fff}}
 .content{{max-width:800px;margin:0 auto}}
+.gallery{{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:3rem}}
+@media(max-width:600px){{.gallery{{grid-template-columns:repeat(2,1fr)}}}}
+.gallery-thumb{{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;
+  cursor:pointer;display:block;transition:opacity .2s}}
+.gallery-thumb:hover{{opacity:.8}}
 .block-text{{font-size:1.1rem;line-height:1.8;margin-bottom:2rem;white-space:pre-wrap}}
-.block-image,.block-video{{margin-bottom:2rem;text-align:center}}
-.block-image img,.block-video video{{max-width:100%;height:auto;border-radius:4px}}
+.block-video{{margin-bottom:2rem;text-align:center}}
+.block-video video{{max-width:100%;height:auto;border-radius:4px}}
+#lightbox{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);
+  z-index:100;align-items:center;justify-content:center;cursor:zoom-out}}
+#lightbox.open{{display:flex}}
+#lightbox img{{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:4px}}
 </style>
 </head>
 <body>
 <a class="back" href="{_esc(CATEGORY_BACK.get(category, '/home.html'))}">←</a>
 <h1>{_esc(title)}</h1>
 <div class="content">
-{blocks_html}</div>
+{gallery_html}{others_html}</div>
+<div id="lightbox"><img id="lightbox-img" src="" alt=""/></div>
+<script>
+var lb=document.getElementById('lightbox');
+var lbImg=document.getElementById('lightbox-img');
+document.querySelectorAll('.gallery-thumb').forEach(function(img){{
+  img.addEventListener('click',function(){{
+    lbImg.src=this.dataset.src;
+    lb.classList.add('open');
+  }});
+}});
+lb.addEventListener('click',function(){{lb.classList.remove('open');}});
+document.addEventListener('keydown',function(e){{if(e.key==='Escape')lb.classList.remove('open');}});
+</script>
 </body>
 </html>"""
 
@@ -582,6 +749,14 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._send_html(_admin_html())
 
+        elif path == "/admin/edit":
+            if not _is_auth(self.headers):
+                self._redirect("/login")
+                return
+            qs = parse_qs(urlparse(self.path).query)
+            slug = re.sub(r"[^\w-]", "", qs.get("slug", [""])[0])
+            self._send_html(_edit_html(slug))
+
         elif path == "/api/pages":
             qs = parse_qs(urlparse(self.path).query)
             cat_filter = qs.get("category", [None])[0]
@@ -658,10 +833,32 @@ class Handler(BaseHTTPRequestHandler):
                 slug = f"{slug}-{secrets.token_hex(3)}"
                 out = PAGES_DIR / f"{slug}.html"
             out.write_text(_generate_page(title, blocks, category))
-            # Save metadata
             thumbnail = next((b["url"] for b in blocks if b.get("type") == "image" and b.get("url")), "")
             idx = _load_index()
-            idx[slug] = {"title": title, "category": category, "thumbnail": thumbnail}
+            idx[slug] = {"title": title, "category": category, "thumbnail": thumbnail, "blocks": blocks}
+            _save_index(idx)
+            self._redirect("/admin")
+
+        elif path == "/admin/edit":
+            if not _is_auth(self.headers):
+                self._redirect("/login")
+                return
+            form = self._parse_urlencoded()
+            slug = re.sub(r"[^\w-]", "", form.get("slug", ""))
+            title = form.get("title", "Untitled").strip()
+            category = form.get("category", "") if form.get("category", "") in CATEGORIES else ""
+            try:
+                blocks = json.loads(form.get("blocks", "[]"))
+            except json.JSONDecodeError:
+                blocks = []
+            out = PAGES_DIR / f"{slug}.html"
+            if not out.exists():
+                self._redirect("/admin")
+                return
+            out.write_text(_generate_page(title, blocks, category))
+            thumbnail = next((b["url"] for b in blocks if b.get("type") == "image" and b.get("url")), "")
+            idx = _load_index()
+            idx[slug] = {"title": title, "category": category, "thumbnail": thumbnail, "blocks": blocks}
             _save_index(idx)
             self._redirect("/admin")
 
