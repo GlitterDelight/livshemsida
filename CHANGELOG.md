@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-04-27 — Page editing, image gallery, category list layout & mobile fix
+
+### New features
+- **Page editing** (`/admin/edit`): Existing pages can now be edited from the admin panel. An "Edit" button appears next to each page in the list. The edit form is pre-filled with the existing title, category, text blocks, and media. Block data is now stored in `pages/index.json` alongside title and category.
+- **Image gallery with lightbox** (generated pages): All images on a page are collected into a responsive grid gallery at the top. Clicking a thumbnail opens the full image in a lightbox overlay. Close by clicking anywhere or pressing Escape.
+- **Category page list layout** (`projects.html`, `collaborations.html`, `contact.html`): Category pages now display pages as a vertical list with a small thumbnail (100×65px) to the left of the title, replacing the old full-screen nav-panel style.
+
+### Fixes
+- **Mobile home page invisible** (`style.css`): Nav items were invisible on mobile because the `@media (max-width: 768px)` block appeared before the `.nav-item` base styles in the CSS file. Since both rules had equal specificity, the later `flex: 1` overrode `flex: none` from the media query. Fixed by moving the media query after the base styles.
+
+### Technical notes
+- CSS and static HTML files are now editable directly via sshfs since project directory ownership was changed to `truenas_admin`.
+- Service configured to run as `truenas_admin` (instead of root) via `User=` in the systemd unit file, allowing process-based restarts without sudo.
+- `.claude/` added to `.gitignore`.
+
 ## 2026-04-18 — Admin CMS & Category Pages
 
 ### New features

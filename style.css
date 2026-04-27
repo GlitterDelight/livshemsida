@@ -21,17 +21,6 @@ body {
   gap: 0;
 }
 
-@media (max-width: 768px) {
-  #nav {
-    flex-direction: column;
-    height: auto;
-  }
-  .nav-item {
-    height: 56vw;
-    background-size: cover;
-  }
-}
-
 .nav-item {
   flex: 1;
   position: relative;
@@ -41,6 +30,18 @@ body {
   outline: none;
   background-size: cover;
   background-position: center;
+}
+
+@media (max-width: 768px) {
+  #nav {
+    flex-direction: column;
+    height: auto;
+  }
+  .nav-item {
+    flex: none;
+    height: 56vw;
+    background-size: cover;
+  }
 }
 
 .nav-item::before {
